@@ -7,7 +7,9 @@ import {
     deleteReview, 
     respondToReview, 
     markHelpful, 
-    canReview 
+    canReview, 
+    editResponse,
+    deleteResponse
 } from "../controllers/reviewController.js";
 import authUser from "../middlewares/authUser.js";
 import authDoctor from "../middlewares/authDoctor.js";
@@ -24,6 +26,9 @@ reviewRouter.post("/helpful", markHelpful); // No auth required for marking help
 
 // Doctor routes (require doctor authentication)
 reviewRouter.post("/respond", authDoctor, respondToReview);
+// In your routes file (e.g., reviewRoute.js)
+reviewRouter.put('/edit-response', authDoctor, editResponse);
+reviewRouter.delete('/delete-response', authDoctor, deleteResponse); // optional
 
 // Public routes (no authentication required)
 reviewRouter.post("/doctor", getDoctorReviews);
