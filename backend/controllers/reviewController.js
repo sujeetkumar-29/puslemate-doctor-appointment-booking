@@ -79,13 +79,13 @@ const addReview = async (req, res) => {
 const getDoctorReviews = async (req, res) => {
     try {
         const { docId } = req.body;
-        
+
         if (!docId) {
             return res.json({ success: false, message: "Doctor ID is required" });
         }
 
         const reviews = await reviewModel.find({ docId }).sort({ date: -1 });
-        
+
         // Calculate rating statistics
         const totalReviews = reviews.length;
         let totalRating = 0;
@@ -118,9 +118,9 @@ const getDoctorReviews = async (req, res) => {
 const getUserReviews = async (req, res) => {
     try {
         const userId = req.user?.userId;
-        
+
         const reviews = await reviewModel.find({ userId }).sort({ date: -1 });
-        
+
         // Get doctor names for each review
         const reviewsWithDoctorInfo = await Promise.all(
             reviews.map(async (review) => {
@@ -241,6 +241,83 @@ const respondToReview = async (req, res) => {
     }
 };
 
+// API for doctor to edit their response to a review
+const editResponse = async (req, res) => {
+    try {
+        const { docId } = req.body; // From auth middleware
+        const { reviewId, response } = req.body;
+
+        if (!reviewId || !response) {
+            return res.json({ success: false, message: "Review ID and response are required" });
+        }
+
+        const review = await reviewModel.findById(reviewId);
+        if (!review) {
+            return res.json({ success: false, message: "Review not found" });
+        }
+
+        if (review.docId !== docId) {
+            return res.json({ success: false, message: "Unauthorized action" });
+        }
+
+        // Check if doctor has already responded
+        if (!review.doctorResponse) {
+            return res.json({ success: false, message: "No existing response to edit" });
+        }
+
+        await reviewModel.findByIdAndUpdate(reviewId, {
+            doctorResponse: response.trim(),
+            doctorResponseDate: Date.now()
+        });
+
+        res.json({ success: true, message: "Response updated successfully" });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// API for doctor to delete their response to a review (optional feature)
+const deleteResponse = async (req, res) => {
+    try {
+        const { docId } = req.body; // From auth middleware
+        const { reviewId } = req.body;
+
+        if (!reviewId) {
+            return res.json({ success: false, message: "Review ID is required" });
+        }
+
+        const review = await reviewModel.findById(reviewId);
+        if (!review) {
+            return res.json({ success: false, message: "Review not found" });
+        }
+
+        if (review.docId !== docId) {
+            return res.json({ success: false, message: "Unauthorized action" });
+        }
+
+        // Check if doctor has a response to delete
+        if (!review.doctorResponse) {
+            return res.json({ success: false, message: "No response to delete" });
+        }
+
+        await reviewModel.findByIdAndUpdate(reviewId, {
+            $unset: {
+                doctorResponse: 1,
+                doctorResponseDate: 1
+            }
+        });
+
+        res.json({ success: true, message: "Response deleted successfully" });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// module.exports = { editResponse, deleteResponse };
 // API to mark review as helpful
 const markHelpful = async (req, res) => {
     try {
@@ -278,13 +355,13 @@ const canReview = async (req, res) => {
             return res.json({ success: false, message: "Unauthorized action" });
         }
 
-        const canReviewApp = appointmentData.isCompleted && 
-                            !appointmentData.cancelled;
+        const canReviewApp = appointmentData.isCompleted &&
+            !appointmentData.cancelled;
 
         const existingReview = await reviewModel.findOne({ appointmentId });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             canReview: canReviewApp && !existingReview,
             hasExistingReview: !!existingReview,
             isCompleted: appointmentData.isCompleted,
@@ -301,9 +378,9 @@ const canReview = async (req, res) => {
 const updateDoctorRating = async (docId) => {
     try {
         const reviews = await reviewModel.find({ docId });
-        
+
         if (reviews.length === 0) {
-            await doctorModel.findByIdAndUpdate(docId, { 
+            await doctorModel.findByIdAndUpdate(docId, {
                 averageRating: 0,
                 totalReviews: 0
             });
@@ -323,13 +400,15 @@ const updateDoctorRating = async (docId) => {
     }
 };
 
-export { 
-    addReview, 
-    getDoctorReviews, 
-    getUserReviews, 
-    updateReview, 
-    deleteReview, 
-    respondToReview, 
-    markHelpful, 
-    canReview 
+export {
+    addReview,
+    getDoctorReviews,
+    getUserReviews,
+    updateReview,
+    deleteReview,
+    respondToReview,
+    markHelpful,
+    canReview,
+    deleteResponse,
+    editResponse
 };
