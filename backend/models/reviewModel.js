@@ -59,7 +59,7 @@ const reviewSchema = new mongoose.Schema({
 // Index for efficient queries
 reviewSchema.index({ docId: 1, date: -1 });
 reviewSchema.index({ userId: 1 });
-reviewSchema.index({ appointmentId: 1 });
+// reviewSchema.index({ appointmentId: 1 });
 
 const reviewModel = mongoose.models.review || mongoose.model("review", reviewSchema);
 
