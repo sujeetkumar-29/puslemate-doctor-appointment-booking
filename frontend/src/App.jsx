@@ -12,6 +12,7 @@ import Footer from './components/Footer'
 import MyProfile from './pages/MyProfile'
 import {ToastContainer,toast} from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
+// import DoctorAchievements from './pages/Achievements'
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/doctors" element={<Doctors />} />
+        {/* <Route path="/doctors-achievement" element={<DoctorAchievements />} /> */}
         <Route path="/doctors/:speciality" element={<Doctors />} />
         <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />

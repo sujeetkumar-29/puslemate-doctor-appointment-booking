@@ -1,19 +1,39 @@
 import React, { useContext, useState } from 'react'
 import { assets } from '../assets/assets'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { AppContext } from '../context/AppContext';
+import { AppContext } from '../context/AppContext'
+import { 
+  Home, 
+  Stethoscope, 
+  Info, 
+  Mail, 
+  User, 
+  Calendar, 
+  LogOut, 
+  Menu, 
+  X, 
+  ChevronDown 
+} from 'lucide-react'
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  // const [token, setToken] = useState(true);
-  const {token, setToken,userData} = useContext(AppContext);
+  const {token, setToken, userData} = useContext(AppContext);
 
-  const logout=()=>{
+  const logout = () => {
     setToken(false)
     localStorage.removeItem("token")
-     navigate('/login');   
+    navigate('/login');   
   }
+
+  // Navigation items with icons
+  const navItems = [
+    { path: '/', label: 'HOME', icon: Home },
+    { path: '/doctors', label: 'DOCTORS', icon: Stethoscope },
+    { path: '/about', label: 'ABOUT', icon: Info },
+    { path: '/contact', label: 'CONTACT', icon: Mail }
+  ];
+
   return (
     <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-gray-300 px-4 md:px-8 relative z-30 sticky top-0 bg-white shadow-md">
       {/* Logo */}
@@ -26,100 +46,112 @@ const Navbar = () => {
 
       {/* Desktop Nav Links */}
       <ul className="hidden md:flex items-center gap-6 font-medium text-gray-700">
-        {['/', '/doctors', '/about', '/contact'].map((path, i) => (
+        {navItems.map(({ path, label, icon: Icon }, i) => (
           <NavLink
             key={i}
             to={path}
             className={({ isActive }) =>
-              `py-1 hover:text-primary ${isActive ? 'text-primary border-b-2 border-primary' : ''}`
+              `py-1 hover:text-primary transition-colors duration-200 ${
+                isActive ? 'text-primary border-b-2 border-primary' : ''
+              }`
             }
           >
-            {path === '/' ? 'HOME' : path.slice(1).toUpperCase()}
+            <div className="flex items-center gap-2">
+              <Icon size={16} />
+              <span>{label}</span>
+            </div>
           </NavLink>
         ))}
       </ul>
 
       {/* Profile / Login / Mobile Menu Toggle */}
       <div className="flex items-center gap-3">
-        {token && userData? (
+        {token && userData ? (
           <div className="relative group cursor-pointer">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 hover:bg-gray-50 p-2 rounded-lg transition-colors duration-200">
               <img
                 src={userData.image}
                 alt="profile"
-                className="w-10 h-10 rounded-full bg-gray-400"
+                className="w-8 h-8 rounded-full bg-gray-400"
               />
-              <img src={assets.dropdown_icon} alt="dropdown" className="w-3" />
+              <ChevronDown size={16} className="text-gray-500" />
             </div>
 
             {/* Dropdown */}
-            <div className="absolute right-0 mt-3 bg-white border border-gray-300 shadow-md rounded-lg w-48 p-4 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <p
+            <div className="absolute right-0 mt-3 bg-white border border-gray-300 shadow-lg rounded-lg w-48 p-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <div
                 onClick={() => navigate('/my-profile')}
-                className="cursor-pointer hover:text-black text-gray-600 py-1"
+                className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 text-gray-700 p-3 rounded-lg transition-colors duration-200"
               >
-                My Profile
-              </p>
-              <p
+                <User size={16} />
+                <span>My Profile</span>
+              </div>
+              <div
                 onClick={() => navigate('/my-appointments')}
-                className="cursor-pointer hover:text-black text-gray-600 py-1"
+                className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 text-gray-700 p-3 rounded-lg transition-colors duration-200"
               >
-                My Appointments
-              </p>
-              <p
-                onClick={() => logout()}
-                className="cursor-pointer hover:text-red-600 text-gray-600 py-1"
+                <Calendar size={16} />
+                <span>My Appointments</span>
+              </div>
+              <div
+                onClick={logout}
+                className="flex items-center gap-3 cursor-pointer hover:bg-red-50 hover:text-red-600 text-gray-700 p-3 rounded-lg transition-colors duration-200"
               >
-                Logout
-              </p>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </div>
             </div>
           </div>
         ) : (
           <button
             onClick={() => navigate('/login')}
-            className="bg-primary text-white px-6 py-2 rounded-full font-light hidden md:block hover:bg-opacity-90 transition"
+            className="bg-primary text-white px-6 py-2 rounded-full font-light hidden md:flex items-center gap-2 hover:bg-opacity-90 transition-all duration-200"
           >
-            Create Account
+            <User size={16} />
+            <span>Create Account</span>
           </button>
         )}
 
-        {/* Hamburger */}
-        <img
-          src={assets.menu_icon}
-          alt="menu"
-          className="w-6 h-6 cursor-pointer md:hidden"
+        {/* Hamburger Menu */}
+        <button
+          className="p-2 cursor-pointer md:hidden hover:bg-gray-100 rounded-lg transition-colors duration-200"
           onClick={() => setShowMenu(true)}
-        />
+        >
+          <Menu size={20} />
+        </button>
       </div>
 
       {/* Mobile Menu */}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-40 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-xl z-40 transform transition-transform duration-300 ${
           showMenu ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between px-5 py-6 border-b">
           <img className="w-36" src={assets.pmlogo} alt="logo" />
-          <img
-            className="w-6 cursor-pointer"
+          <button
+            className="p-2 cursor-pointer hover:bg-gray-100 rounded-lg transition-colors duration-200"
             onClick={() => setShowMenu(false)}
-            src={assets.cross_icon}
-            alt="close"
-          />
+          >
+            <X size={20} />
+          </button>
         </div>
-        <ul className="flex flex-col items-start px-5 gap-4 font-medium text-gray-800 mt-4">
-          {['/', '/doctors', '/about', '/contact'].map((path, i) => (
+        <ul className="flex flex-col items-start px-3 gap-2 font-medium text-gray-800 mt-4">
+          {navItems.map(({ path, label, icon: Icon }, i) => (
             <NavLink
               key={i}
               to={path}
               onClick={() => setShowMenu(false)}
               className={({ isActive }) =>
-                `w-full py-2 px-2 rounded hover:bg-gray-100 ${
-                  isActive ? 'text-white bg-cyan-900 font-semibold' : ''
+                `w-full py-3 px-4 rounded-lg  transition-colors duration-200 ${
+                  isActive ? 'text-white bg-primary font-semibold' : ''
                 }`
               }
             >
-              {path === '/' ? 'HOME' : path.slice(1).toUpperCase()}
+              <div className="flex items-center gap-3">
+                <Icon size={18} />
+                <span>{label}</span>
+              </div>
             </NavLink>
           ))}
         </ul>
@@ -129,9 +161,10 @@ const Navbar = () => {
               navigate('/login');
               setShowMenu(false);
             }}
-            className="bg-primary text-white mx-5 mt-6 px-6 py-2 rounded-full w-full text-sm hover:bg-opacity-90"
+            className="bg-primary text-white mx-5 mt-6 px-6 py-2 rounded-full w-full text-sm hover:bg-opacity-90 flex items-center justify-center gap-2 transition-all duration-200"
           >
-            Create Account
+            <User size={16} />
+            <span>Create Account</span>
           </button>
         )}
       </div>
@@ -139,7 +172,7 @@ const Navbar = () => {
       {/* Backdrop for mobile menu */}
       {showMenu && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-30 z-20"
+          className="fixed inset-0 bg-black bg-opacity-30 z-20 transition-opacity duration-300"
           onClick={() => setShowMenu(false)}
         />
       )}
