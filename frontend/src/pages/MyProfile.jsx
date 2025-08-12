@@ -159,6 +159,7 @@ const MyProfile = () => {
                 onChange={(e) => setUserData((prev) => ({ ...prev, gender: e.target.value }))}
                 className="border px-3 py-1 rounded-md w-full"
               >
+                {/* <option >Select Gender</option> */}
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
