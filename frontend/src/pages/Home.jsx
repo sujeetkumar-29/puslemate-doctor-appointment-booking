@@ -13,6 +13,7 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50">
       {/* <Header /> */}
         <Hero />
+         
       <main className="container mx-auto px-4 py-8">
         {/* Main content will go here */}
         <div className="text-center text-gray-500 mt-8">
@@ -22,8 +23,8 @@ const Home = () => {
       <div>
         <BookingStep />
         <SpecialityMenu />
-        <TopDoctors />
         <HomeReviews />
+        <TopDoctors />
         <Faq />
         <Banner />
       </div>
