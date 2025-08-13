@@ -17,7 +17,7 @@ import AIChat from './components/AIChat'
 
 const App = () => {
   return (
-    <div className="mx-4 sm:mx-[10%]">
+    <div className="mx-4 sm:mx-[2%]">
       <ToastContainer />
         <Navbar />
       <Routes>
