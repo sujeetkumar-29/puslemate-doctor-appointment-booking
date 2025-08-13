@@ -7,6 +7,7 @@ import adminRouter from './routes/adminRoute.js';
 import doctorRouter from './routes/doctorRoute.js';
 import userRouter from './routes/userRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
+import aiRouter from './routes/aiRoute.js';
 
 
 // app configuration
@@ -30,6 +31,8 @@ app.use("/api/doctor",doctorRouter)
 app.use("/api/user",userRouter)
 
 app.use("/api/review", reviewRouter);
+
+app.use('/api/ai', aiRouter); 
 
 app.get("/",(req,res)=>{
     res.send("Api working successfully");

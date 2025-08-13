@@ -12,6 +12,7 @@ import Footer from './components/Footer'
 import MyProfile from './pages/MyProfile'
 import {ToastContainer,toast} from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
+import AIChat from './components/AIChat'
 // import DoctorAchievements from './pages/Achievements'
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
         <Route path="/my-appointments" element={<MyAppointments />} />
         <Route path="/appointment/:docId" element={<Appointment />} />
       </Routes>
+      <AIChat />
       <Footer />
     </div>
   )
