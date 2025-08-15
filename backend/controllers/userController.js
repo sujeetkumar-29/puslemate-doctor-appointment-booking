@@ -6,8 +6,7 @@ import { v2 as cloudinary } from "cloudinary"
 import doctorModel from "../models/doctorModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import razorpay from "razorpay"
-
-
+import { v4 as uuidv4 } from 'uuid';
 
 // API to register user
 const registerUser = async (req, res) => {
@@ -41,7 +40,6 @@ const registerUser = async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
 
         res.json({ success: true, token })
-        // console.log(token)
 
     } catch (error) {
         console.log(error)
@@ -59,13 +57,11 @@ const loginUser = async (req, res) => {
             return res.json({ success: false, message: "User does not exits." })
         }
 
-
         const isMatch = await bcrypt.compare(password, user.password)
 
         if (isMatch) {
             const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
             res.json({ success: true, token })
-            //   toast.success("Logged in successfully!");
         } else {
             res.json({ success: false, message: "Invalid Credentials" })
         }
@@ -92,7 +88,7 @@ const getProfile = async (req, res) => {
 // API to update user profile
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user?.userId; // Get from auth middleware
+        const userId = req.user?.userId;
         const { name, phone, address, dob, gender } = req.body;
         if (!userId) return res.json({ success: false, message: "User ID missing" });
         const imageFile = req.file
@@ -104,7 +100,6 @@ const updateProfile = async (req, res) => {
         await userModel.findByIdAndUpdate(userId, { name, phone, address: JSON.parse(address), dob, gender })
 
         if (imageFile) {
-            // upload image to cloudinary
             const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: "image" })
             const imageURL = imageUpload.secure_url
 
@@ -120,7 +115,7 @@ const updateProfile = async (req, res) => {
 // API to book appointment 
 const bookAppointment = async (req, res) => {
     try {
-        const userId = req.user?.userId; // from auth middleware
+        const userId = req.user?.userId;
         const { docId, slotDate, slotTime } = req.body;
 
         const docData = await doctorModel.findById(docId).select("-password");
@@ -133,10 +128,8 @@ const bookAppointment = async (req, res) => {
             return res.json({ success: false, message: "Doctor not available" });
         }
 
-        // Ensure slots_booked exists
         let slots_booked = docData.slots_booked || {};
 
-        // Check for slot availability
         if (slots_booked[slotDate]) {
             if (slots_booked[slotDate].includes(slotTime)) {
                 return res.json({ success: false, message: "Slot not available" });
@@ -165,7 +158,6 @@ const bookAppointment = async (req, res) => {
         const newAppointment = new appointmentModel(appointmentData);
         await newAppointment.save();
 
-        // Save updated slots_booked in doctor
         await doctorModel.findByIdAndUpdate(docId, { slots_booked });
 
         res.json({ success: true, message: "Appointment Booked" });
@@ -179,7 +171,7 @@ const bookAppointment = async (req, res) => {
 // API to get user appointments for frontend my-appointments page
 const listAppointment = async (req, res) => {
     try {
-        const userId = req.user?.userId; // from auth middleware
+        const userId = req.user?.userId;
         const appointments = await appointmentModel.find({ userId })
 
         res.json({ success: true, appointments })
@@ -233,7 +225,6 @@ const razorpayInstance = new razorpay({
 
 // API to make payment of appointment using razorpay
 const paymentRazorpay = async (req, res) => {
-
     try {
         const { appointmentId } = req.body;
         const appointmentData = await appointmentModel.findById(appointmentId)
@@ -242,14 +233,12 @@ const paymentRazorpay = async (req, res) => {
             return res.json({ success: false, message: "Appointment cancelled or not found " })
         }
 
-        // Creating options for razorpay payment
         const options = {
             amount: appointmentData.amount * 100,
             currency: process.env.CURRENCY,
             receipt: appointmentId,
         }
 
-        // creation of an order
         const order = await razorpayInstance.orders.create(options)
 
         res.json({ success: true, order })
@@ -258,19 +247,18 @@ const paymentRazorpay = async (req, res) => {
         res.json({ success: false, message: error.message });
     }
 }
+
 // API to verify payment of razorpay
 const verifyRazorpay = async (req, res) => {
     try {
         const { razorpay_order_id } = req.body
         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
 
-        // console.log(orderInfo)
         if(orderInfo.status === "paid"){
             await appointmentModel.findByIdAndUpdate(orderInfo.receipt,{payment:true})
             res.json({ success: true, message: "Payment Successful" })
         } else{
             res.json({ success: false, message: "Payment Failed" })
-
         }
     } catch (error) {
         console.log(error);
@@ -278,6 +266,183 @@ const verifyRazorpay = async (req, res) => {
     }
 }
 
+// VIDEO CHAT APIs
 
+// Generate video room for appointment
+const generateVideoRoom = async (req, res) => {
+    try {
+        const { appointmentId } = req.body;
+        const userId = req.user?.userId;
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay }
+        const appointment = await appointmentModel.findById(appointmentId);
+
+        if (!appointment) {
+            return res.json({ success: false, message: "Appointment not found" });
+        }
+
+        // Check if user is the patient for this appointment
+        if (appointment.userId !== userId) {
+            return res.json({ success: false, message: "Unauthorized access" });
+        }
+
+        // Check if appointment allows video access
+        if (!appointment.canAccessVideo) {
+            let message = "Video call not available. ";
+            if (!appointment.payment) {
+                message += "Please complete payment first.";
+            } else if (appointment.cancelled) {
+                message += "Appointment has been cancelled.";
+            } else if (appointment.isCompleted) {
+                message += "Appointment has been completed.";
+            }
+            return res.json({ success: false, message });
+        }
+
+        // Generate or get existing room ID
+        let roomId = appointment.videoCall?.roomId;
+        if (!roomId) {
+            roomId = `room_${appointmentId}_${uuidv4().slice(0, 8)}`;
+            
+            await appointmentModel.findByIdAndUpdate(appointmentId, {
+                'videoCall.roomId': roomId
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            roomId,
+            appointmentId,
+            participants: {
+                patient: appointment.userData,
+                doctor: appointment.docData
+            }
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Start video call
+const startVideoCall = async (req, res) => {
+    try {
+        const { appointmentId } = req.body;
+        const userId = req.user?.userId;
+
+        const appointment = await appointmentModel.findById(appointmentId);
+
+        if (!appointment || !appointment.canAccessVideo) {
+            return res.json({ success: false, message: "Cannot start video call" });
+        }
+
+        // Check if user is the patient for this appointment
+        if (appointment.userId !== userId) {
+            return res.json({ success: false, message: "Unauthorized access" });
+        }
+
+        await appointmentModel.findByIdAndUpdate(appointmentId, {
+            'videoCall.isActive': true,
+            'videoCall.startedAt': new Date()
+        });
+
+        res.json({ success: true, message: "Video call started" });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// End video call
+const endVideoCall = async (req, res) => {
+    try {
+        const { appointmentId } = req.body;
+        const userId = req.user?.userId;
+
+        const appointment = await appointmentModel.findById(appointmentId);
+
+        if (!appointment) {
+            return res.json({ success: false, message: "Appointment not found" });
+        }
+
+        // Check if user is the patient for this appointment
+        if (appointment.userId !== userId) {
+            return res.json({ success: false, message: "Unauthorized access" });
+        }
+
+        const endTime = new Date();
+        let duration = 0;
+
+        if (appointment.videoCall?.startedAt) {
+            duration = Math.round((endTime - new Date(appointment.videoCall.startedAt)) / (1000 * 60)); // in minutes
+        }
+
+        await appointmentModel.findByIdAndUpdate(appointmentId, {
+            'videoCall.isActive': false,
+            'videoCall.endedAt': endTime,
+            'videoCall.duration': duration
+        });
+
+        res.json({ 
+            success: true, 
+            message: "Video call ended",
+            duration 
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// Check video call status
+const getVideoCallStatus = async (req, res) => {
+    try {
+        const { appointmentId } = req.query;
+        const userId = req.user?.userId;
+
+        const appointment = await appointmentModel.findById(appointmentId);
+
+        if (!appointment) {
+            return res.json({ success: false, message: "Appointment not found" });
+        }
+
+        // Check if user is the patient for this appointment
+        if (appointment.userId !== userId) {
+            return res.json({ success: false, message: "Unauthorized access" });
+        }
+
+        res.json({ 
+            success: true, 
+            canAccessVideo: appointment.canAccessVideo,
+            videoCall: appointment.videoCall,
+            appointmentStatus: {
+                payment: appointment.payment,
+                cancelled: appointment.cancelled,
+                isCompleted: appointment.isCompleted
+            }
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export { 
+    registerUser, 
+    loginUser, 
+    getProfile, 
+    updateProfile, 
+    bookAppointment, 
+    listAppointment, 
+    cancelAppointment, 
+    paymentRazorpay, 
+    verifyRazorpay,
+    // Video chat exports
+    generateVideoRoom,
+    startVideoCall,
+    endVideoCall,
+    getVideoCallStatus
+}
