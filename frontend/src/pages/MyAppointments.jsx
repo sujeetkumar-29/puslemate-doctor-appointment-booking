@@ -1,12 +1,13 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import axios from 'axios';
-import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import UserVideoChat from '../components/UserVideoChat';
 
 const MyAppointments = () => {
   const { backendUrl, token, getDoctorsData } = useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
+  const [showVideoChat, setShowVideoChat] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const navigate = useNavigate();
 
   const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -18,32 +19,36 @@ const MyAppointments = () => {
 
   const getUserAppointments = async () => {
     try {
-      const { data } = await axios.get(`${backendUrl}/api/user/appointments`, {
+      const response = await fetch(`${backendUrl}/api/user/appointments`, {
         headers: { token }
       });
+      const data = await response.json();
       if (data.success) {
         setAppointments(data.appointments.reverse());
       }
     } catch (error) {
-      toast.error(error.message);
+      console.error('Error fetching appointments:', error);
     }
   };
 
   const cancelAppointment = async (appointmentId) => {
     try {
-      const { data } = await axios.post(`${backendUrl}/api/user/cancel-appointment`,
-        { appointmentId },
-        { headers: { token } }
-      );
+      const response = await fetch(`${backendUrl}/api/user/cancel-appointment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token
+        },
+        body: JSON.stringify({ appointmentId })
+      });
+      const data = await response.json();
+      
       if (data.success) {
-        toast.success(data.message);
         getUserAppointments();
         getDoctorsData();
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      console.error('Error cancelling appointment:', error);
     }
   };
 
@@ -57,15 +62,21 @@ const MyAppointments = () => {
       order_id: order.id,
       handler: async (response) => {
         try {
-          const { data } = await axios.post(`${backendUrl}/api/user/verifyRazorpay`, response, {
-            headers: { token }
+          const res = await fetch(`${backendUrl}/api/user/verifyRazorpay`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              token
+            },
+            body: JSON.stringify(response)
           });
+          const data = await res.json();
           if (data.success) {
             getUserAppointments();
             navigate("/my-appointments");
           }
         } catch (error) {
-          toast.error(error.message);
+          console.error('Error verifying payment:', error);
         }
       }
     };
@@ -75,16 +86,37 @@ const MyAppointments = () => {
 
   const appointmentRazorpay = async (appointmentId) => {
     try {
-      const { data } = await axios.post(`${backendUrl}/api/user/payment-razorpay`,
-        { appointmentId },
-        { headers: { token } }
-      );
+      const response = await fetch(`${backendUrl}/api/user/payment-razorpay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token
+        },
+        body: JSON.stringify({ appointmentId })
+      });
+      const data = await response.json();
+      
       if (data.success) {
         initPay(data.order);
       }
     } catch (error) {
-      toast.error("Payment initiation failed.");
+      console.error('Payment initiation failed:', error);
     }
+  };
+
+  const startVideoCall = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowVideoChat(true);
+  };
+
+  const closeVideoChat = () => {
+    setShowVideoChat(false);
+    setSelectedAppointment(null);
+  };
+
+  // Check if video call is available for appointment
+  const canStartVideoCall = (appointment) => {
+    return appointment.payment && !appointment.cancelled && !appointment.isCompleted;
   };
 
   useEffect(() => {
@@ -113,10 +145,27 @@ const MyAppointments = () => {
                 <p className="text-sm text-gray-500">Experience: {item.docData.experience}</p>
                 <p className="text-sm text-gray-500">Address: {item.docData.address.line1}, {item.docData.address.line2}</p>
                 <p className="text-sm font-medium text-blue-600">Date & Time: {slotDateFormat(item.slotDate)} | {item.slotTime}</p>
+                
+                {/* Video call duration if available */}
+                {item.videoCall?.duration > 0 && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <span>📹</span> Call Duration: {item.videoCall.duration} minutes
+                  </p>
+                )}
               </div>
 
               {/* Actions */}
               <div className="flex flex-col gap-2 mt-4 sm:mt-0 sm:ml-auto">
+                {/* Video Call Button */}
+                {canStartVideoCall(item) && (
+                  <button
+                    onClick={() => startVideoCall(item)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm hover:bg-blue-600 transition flex items-center gap-2"
+                  >
+                    <span>📹</span> Start Video Call
+                  </button>
+                )}
+
                 {!item.cancelled && item.payment && !item.isCompleted && (
                   <button className="py-2 px-4 rounded bg-green-100 text-green-700 border border-green-200 cursor-default">Paid</button>
                 )}
@@ -144,12 +193,28 @@ const MyAppointments = () => {
                 )}
 
                 {item.isCompleted && (
-                  <button className="py-2 px-4 border border-green-500 rounded text-green-500 cursor-default">Completed</button>
+                  <div className="flex flex-col gap-2">
+                    <button className="py-2 px-4 border border-green-500 rounded text-green-500 cursor-default">Completed</button>
+                    {item.videoCall?.duration > 0 && (
+                      <span className="text-xs text-gray-500 text-center">
+                        Video consultation completed
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Video Chat Modal */}
+      {showVideoChat && selectedAppointment && (
+        <UserVideoChat
+          appointmentId={selectedAppointment._id}
+          isDoctor={false}
+          onClose={closeVideoChat}
+        />
       )}
     </div>
   );
