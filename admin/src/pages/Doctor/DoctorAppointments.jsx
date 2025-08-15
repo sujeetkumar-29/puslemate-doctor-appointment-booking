@@ -1,9 +1,8 @@
-import React from 'react'
-import { useContext } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { DoctorContext } from '../../context/DoctorContext'
-import { useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext'
 import { assets } from '../../assets/assets'
+import DoctorVideoChat from '../../components/DoctorVideoChat'
 
 const DoctorAppointments = () => {
   const { dToken, appointments, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext)
@@ -11,6 +10,8 @@ const DoctorAppointments = () => {
   const [filterStatus, setFilterStatus] = useState('All')
   const [filterPayment, setFilterPayment] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showVideoChat, setShowVideoChat] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
 
   useEffect(() => {
     if (dToken) {
@@ -49,6 +50,21 @@ const DoctorAppointments = () => {
     pending: appointments.filter(apt => !apt.isCompleted && !apt.cancelled).length,
     completed: appointments.filter(apt => apt.isCompleted).length,
     cancelled: appointments.filter(apt => apt.cancelled).length
+  }
+
+  const startVideoCall = (appointment) => {
+    setSelectedAppointment(appointment)
+    setShowVideoChat(true)
+  }
+
+  const closeVideoChat = () => {
+    setShowVideoChat(false)
+    setSelectedAppointment(null)
+  }
+
+  // ✅ Only allow video call if payment is ONLINE
+  const canStartVideoCall = (appointment) => {
+    return appointment.payment === true && !appointment.cancelled && !appointment.isCompleted
   }
 
   return (
@@ -167,7 +183,7 @@ const DoctorAppointments = () => {
       {/* Appointments Table */}
       <div className='bg-white shadow-lg rounded-xl border border-gray-100 overflow-hidden'>
         {/* Table Header */}
-        <div className='hidden lg:grid grid-cols-[0.5fr_2.5fr_1fr_1fr_2.5fr_1fr_1.5fr] py-4 px-6 bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200'>
+        <div className='hidden lg:grid grid-cols-[0.5fr_2.5fr_1fr_1fr_2.5fr_1fr_1.8fr] py-4 px-6 bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200'>
           <p className="text-gray-700 font-semibold text-sm">#</p>
           <p className="text-gray-700 font-semibold text-sm">Patient</p>
           <p className="text-gray-700 font-semibold text-sm">Payment</p>
@@ -197,7 +213,7 @@ const DoctorAppointments = () => {
           ) : (
             filteredAppointments.reverse().map((item, index) => (
               <div 
-                className='group flex flex-col lg:grid lg:grid-cols-[0.5fr_2.5fr_1fr_1fr_2.5fr_1fr_1.5fr] items-center py-4 px-6 border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 last:border-b-0' 
+                className='group flex flex-col lg:grid lg:grid-cols-[0.5fr_2.5fr_1fr_1fr_2.5fr_1fr_1.8fr] items-center py-4 px-6 border-b border-gray-50 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 last:border-b-0' 
                 key={index}
               >
                 {/* Serial Number */}
@@ -216,6 +232,9 @@ const DoctorAppointments = () => {
                   <div>
                     <p className="text-gray-800 font-semibold">{item.userData.name}</p>
                     <p className="text-gray-500 text-xs lg:hidden">Age: {calculateAge(item.userData.dob)}</p>
+                    {item.videoCall?.duration > 0 && (
+                      <p className="text-xs text-green-600">📹 {item.videoCall.duration}min call</p>
+                    )}
                   </div>
                 </div>
 
@@ -256,15 +275,26 @@ const DoctorAppointments = () => {
                 {/* Fees */}
                 <div className='w-full lg:w-auto mb-3 lg:mb-0'>
                   <div className="flex items-center gap-1">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
+                    {/* <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg> */}
                     <span className="text-green-600 font-bold">{currency}{item.amount}</span>
                   </div>
                 </div>
 
                 {/* Status/Actions */}
-                <div className='flex items-center justify-center w-full lg:w-auto'>
+                <div className='flex flex-col items-center justify-center w-full lg:w-auto gap-2'>
+                  {/* Video Call Button */}
+                  {canStartVideoCall(item) && (
+                    <button
+                      onClick={() => startVideoCall(item)}
+                      className='bg-blue-500 text-white px-3 py-1 text-xs font-semibold rounded-full hover:bg-blue-600 transition flex items-center gap-1'
+                      title="Start Video Call"
+                    >
+                      <span>📹</span> Video Call
+                    </button>
+                  )}
+
                   {item.cancelled ? (
                     <span className='px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full'>
                       Cancelled
@@ -305,6 +335,15 @@ const DoctorAppointments = () => {
           )}
         </div>
       </div>
+
+      {/* Video Chat Modal */}
+      {showVideoChat && selectedAppointment && (
+        <DoctorVideoChat
+          appointmentId={selectedAppointment._id}
+          isDoctor={true}
+          onClose={closeVideoChat}
+        />
+      )}
     </div>
   )
 }
