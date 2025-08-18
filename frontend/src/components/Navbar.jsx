@@ -12,7 +12,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  ChevronDown 
+  ChevronDown,
+  
 } from 'lucide-react'
 
 const Navbar = () => {
@@ -31,7 +32,8 @@ const Navbar = () => {
     { path: '/', label: 'HOME', icon: Home },
     { path: '/doctors', label: 'DOCTORS', icon: Stethoscope },
     { path: '/about', label: 'ABOUT', icon: Info },
-    { path: '/contact', label: 'CONTACT', icon: Mail }
+    { path: '/contact', label: 'CONTACT', icon: Mail },
+    { path: '/blogs', label: 'BLOG', icon: Home }
   ];
 
   return (

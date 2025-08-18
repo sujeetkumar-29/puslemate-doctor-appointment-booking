@@ -13,6 +13,8 @@ import MyProfile from './pages/MyProfile'
 import {ToastContainer,toast} from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
 import AIChat from './components/AIChat'
+import Blogs from './pages/Blogs'
+import BlogDetail from './pages/BlogDetail'
 // import DoctorAchievements from './pages/Achievements'
 
 const App = () => {
@@ -28,6 +30,8 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/blogs" element={<Blogs />} />
+        <Route path="/blog/:slug" element={<BlogDetail />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/my-appointments" element={<MyAppointments />} />
         <Route path="/appointment/:docId" element={<Appointment />} />
