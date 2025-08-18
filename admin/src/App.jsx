@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import Login from './pages/Login'
-import {ToastContainer, toast} from 'react-toastify'
+import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { AdminContext } from './context/AdminContext'
 import { AppContext } from './context/AppContext'
@@ -16,13 +16,16 @@ import DoctorDashboard from './pages/Doctor/DoctorDashboard'
 import DoctorAppointments from './pages/Doctor/DoctorAppointments'
 import DoctorProfile from './pages/Doctor/DoctorProfile'
 import DoctorReviews from './pages/Doctor/DoctorReviews'
+import DoctorBlogs from './pages/Doctor/DoctorBlogs'
+import CreateBlog from './pages/Doctor/CreateBlog'
+import EditBlog from './pages/Doctor/EditBlog'
 
 const App = () => {
-  const {aToken}=useContext(AdminContext);
-  const {dToken}=useContext(DoctorContext)
+  const { aToken } = useContext(AdminContext);
+  const { dToken } = useContext(DoctorContext)
   return aToken || dToken ? (
     <div className='bg-[#f0f2f5]'>
-      
+
       <ToastContainer />
       <Navbar />
       <div className='flex items-start'>
@@ -40,14 +43,17 @@ const App = () => {
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/doctor-appointments" element={<DoctorAppointments />} />
           <Route path="/doctor-profile" element={<DoctorProfile />} />
-          <Route path="/doctor-reviews" element={<DoctorReviews/>} />
+          <Route path="/doctor-reviews" element={<DoctorReviews />} />
+          <Route path='/doctor-blogs' element={<DoctorBlogs />} />
+          <Route path='/create-blog' element={<CreateBlog />} />
+          <Route path='/edit-blog/:id' element={<EditBlog />} />
 
         </Routes>
       </div>
     </div>
-  ) :(
+  ) : (
     <>
-       <Login />
+      <Login />
       <ToastContainer />
     </>
   )

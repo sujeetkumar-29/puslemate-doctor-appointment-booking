@@ -39,6 +39,9 @@ const Sidebar = () => {
             <SidebarLink to="/doctor-appointments" icon={assets.appointment_icon} label="Appointments" />
             <SidebarLink to="/doctor-profile" icon={assets.people_icon} label="Doctor Profile" />
             <SidebarLink to="/doctor-reviews" icon={assets.star_icon} label="Doctor Reviews" />
+            <SidebarLink to="/doctor-blogs" icon={assets.people_icon} label="Doctor Blogs" />
+            <SidebarLink to="/create-blog" icon={assets.home_icon} label="Create Blog" />
+            {/* <SidebarLink to="/edit-blog" icon={assets.home_icon} label="Edit Blog" /> */}
           </>
         )}
       </ul>
