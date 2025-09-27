@@ -1,5 +1,4 @@
-// BlogList.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import BlogCard from './BlogCard';
 import axios from 'axios';
@@ -13,12 +12,15 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const inputRef = useRef(null); // ✅ reference to input
 
   const fetchBlogs = async () => {
     try {
       setLoading(true);
       let url = `${backendUrl}/api/blog/all`;
-      
+
       if (featured) {
         url = `${backendUrl}/api/blog/featured`;
       }
@@ -26,7 +28,7 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
       const params = {
         ...(limit && { limit }),
         ...(selectedCategory !== 'all' && { category: selectedCategory }),
-        ...(searchQuery && { search: searchQuery }),
+        ...(debouncedSearch && { search: debouncedSearch }),
         ...(featured && { featured: 'true' }),
         ...(!featured && { page: currentPage })
       };
@@ -57,15 +59,32 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
     }
   };
 
+  // ✅ Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   useEffect(() => {
     fetchBlogs();
-  }, [selectedCategory, currentPage, searchQuery]);
+  }, [selectedCategory, currentPage, debouncedSearch]);
 
   useEffect(() => {
     if (!featured) {
       fetchCategories();
     }
   }, [featured]);
+
+  // ✅ Keep input always focused
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  });
 
   if (loading) {
     return (
@@ -77,12 +96,12 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
 
   return (
     <div className="space-y-6">
-      {/* Filters - Only show for non-featured lists */}
       {!featured && (
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
             <input
+              ref={inputRef} // ✅ attach ref
               type="text"
               placeholder="Search blogs..."
               value={searchQuery}
@@ -90,7 +109,7 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          
+
           {/* Category Filter */}
           <div className="sm:w-64">
             <select
@@ -123,7 +142,7 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
         </div>
       )}
 
-      {/* Pagination - Only for non-featured lists */}
+      {/* Pagination */}
       {!featured && totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2">
           <button
@@ -133,7 +152,7 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
           >
             Previous
           </button>
-          
+
           {[...Array(Math.min(5, totalPages))].map((_, i) => {
             const page = i + 1;
             return (
@@ -150,7 +169,7 @@ const BlogList = ({ featured = false, limit = null, category = null }) => {
               </button>
             );
           })}
-          
+
           <button
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}

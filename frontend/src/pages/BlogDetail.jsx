@@ -4,10 +4,6 @@ import { AppContext } from '../context/AppContext';
 import BlogCard from '../components/BlogCard';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import BlogContentParser from '../components/BlogContentParser';
-// import { Markdown } from 'react-markdown';
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -18,34 +14,34 @@ const BlogDetail = () => {
   const [comment, setComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false); // prevents double clicks
 
-  const fetchBlog = async () => {
+  // fetchBlog now accepts `silent` to avoid showing the full page spinner for small refreshes
+  const fetchBlog = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data } = await axios.get(`${backendUrl}/api/blog/${slug}`);
 
       if (data.success) {
-        setBlog(data.blog);
-
-        // Check if user has liked this blog
-        if (token && userData && data.blog.likes) {
-          const userLike = data.blog.likes.find(like => like.user === userData._id);
-          setIsLiked(!!userLike);
-        }
-
-        // Fetch related blogs
-        fetchRelatedBlogs(data.blog.category, data.blog._id);
+        // ensure likes/comments are at least empty arrays
+        const blogFromServer = {
+          ...data.blog,
+          likes: Array.isArray(data.blog.likes) ? data.blog.likes : [],
+          comments: Array.isArray(data.blog.comments) ? data.blog.comments : []
+        };
+        setBlog(blogFromServer);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || 'Failed to fetch blog');
       }
     } catch (error) {
       console.log(error);
       toast.error('Error fetching blog');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
+  // Keep related blog fetch same as before
   const fetchRelatedBlogs = async (category, currentBlogId) => {
     try {
       const { data } = await axios.get(`${backendUrl}/api/blog/all`, {
@@ -53,7 +49,6 @@ const BlogDetail = () => {
       });
 
       if (data.success) {
-        // Filter out current blog
         const related = data.blogs.filter(b => b._id !== currentBlogId);
         setRelatedBlogs(related.slice(0, 3));
       }
@@ -62,12 +57,29 @@ const BlogDetail = () => {
     }
   };
 
+  // Update isLiked whenever blog or userData changes (handles refresh + login state)
+  useEffect(() => {
+    if (blog && userData) {
+      const liked = (blog.likes || []).some(like => String(like.user) === String(userData._id));
+      setIsLiked(Boolean(liked));
+    } else {
+      setIsLiked(false);
+    }
+  }, [blog, userData]);
+
+  useEffect(() => {
+    fetchBlog();
+  }, [slug]);
+
   const handleLike = async () => {
     if (!token) {
       toast.error('Please login to like blogs');
       return;
     }
+    if (!blog) return;
+    if (likeLoading) return; // guard against double clicks
 
+    setLikeLoading(true);
     try {
       const { data } = await axios.post(
         `${backendUrl}/api/blog/like/${blog._id}`,
@@ -76,18 +88,18 @@ const BlogDetail = () => {
       );
 
       if (data.success) {
-        setIsLiked(!isLiked);
-        setBlog(prev => ({
-          ...prev,
-          likes: isLiked
-            ? prev.likes.filter(like => like.user !== userData._id)
-            : [...prev.likes, { user: userData._id }]
-        }));
-        toast.success(data.message);
+        // Refresh the blog silently from server so UI matches server canonical state
+        // (this avoids stale closures and ensures counts & likes array are accurate)
+        await fetchBlog(true);
+        toast.success(data.message || 'Updated like');
+      } else {
+        toast.error(data.message || 'Error updating like');
       }
     } catch (error) {
       console.log(error);
       toast.error('Error updating like');
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -115,7 +127,7 @@ const BlogDetail = () => {
       if (data.success) {
         setBlog(prev => ({
           ...prev,
-          comments: [...prev.comments, data.comment]
+          comments: [...(prev.comments || []), data.comment]
         }));
         setComment('');
         toast.success('Comment added successfully');
@@ -136,18 +148,6 @@ const BlogDetail = () => {
     });
   };
 
-  const formatContent = (content) => {
-    return content.split('\n').map((paragraph, index) => (
-      <p key={index} className="mb-4 text-gray-700 leading-relaxed">
-        {paragraph}
-      </p>
-    ));
-  };
-
-  useEffect(() => {
-    fetchBlog();
-  }, [slug]);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -167,7 +167,6 @@ const BlogDetail = () => {
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -211,7 +210,7 @@ const BlogDetail = () => {
               </div>
 
               <div className="p-8">
-                {/* Blog Header */}
+                {/* Header, content, tags etc. (left unchanged) */}
                 <div className="mb-6">
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
                     {blog.title}
@@ -225,7 +224,6 @@ const BlogDetail = () => {
                     <span>{blog.views} views</span>
                   </div>
 
-                  {/* Author Info */}
                   {blog.author && (
                     <div className="flex items-center mb-6 p-4 bg-gray-50 rounded-lg">
                       <img
@@ -244,15 +242,12 @@ const BlogDetail = () => {
                   )}
                 </div>
 
-                {/* Blog Content */}
                 <div className="mb-8">
                   <div className="prose prose-lg max-w-none">
                     {blog.content && blog.content.split('\n').map((line, index) => {
                       const trimmedLine = line.trim();
-
                       if (!trimmedLine) return null;
 
-                      // H2 tags
                       if (trimmedLine.match(/<h2>.*?<\/h2>/)) {
                         const text = trimmedLine.replace(/<\/?h2>/g, '');
                         return (
@@ -262,7 +257,6 @@ const BlogDetail = () => {
                         );
                       }
 
-                      // H3 tags
                       if (trimmedLine.match(/<h3>.*?<\/h3>/)) {
                         const text = trimmedLine.replace(/<\/?h3>/g, '');
                         return (
@@ -272,7 +266,6 @@ const BlogDetail = () => {
                         );
                       }
 
-                      // Bullet points with bold text
                       if (trimmedLine.match(/^\s*\*\s+\*\*.*?\*\*/)) {
                         const text = trimmedLine
                           .replace(/^\s*\*\s*/, '')
@@ -288,7 +281,6 @@ const BlogDetail = () => {
                         );
                       }
 
-                      // Regular paragraphs
                       const text = trimmedLine
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/\*(.*?)\*/g, '<em>$1</em>');
@@ -302,9 +294,6 @@ const BlogDetail = () => {
                   </div>
                 </div>
 
-
-
-                {/* Tags */}
                 {blog.tags && blog.tags.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold mb-3">Tags</h3>
@@ -326,10 +315,11 @@ const BlogDetail = () => {
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={handleLike}
+                      disabled={likeLoading}
                       className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isLiked
                         ? 'bg-red-50 text-red-600 border border-red-200'
                         : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                        }`}
+                        } ${likeLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       <svg
                         className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`}
@@ -344,19 +334,20 @@ const BlogDetail = () => {
                           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                         />
                       </svg>
-                      <span>{blog.likes.length}</span>
+                      <span>{(blog.likes || []).length}</span>
                     </button>
 
                     <div className="flex items-center space-x-2 text-gray-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <span>{blog.comments.length} Comments</span>
+                      <span>{(blog.comments || []).length} Comments</span>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500">Share:</span>
+                    {/* share buttons untouched */}
                     <button className="p-2 text-gray-400 hover:text-blue-600">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
@@ -370,11 +361,10 @@ const BlogDetail = () => {
                   </div>
                 </div>
 
-                {/* Comments Section */}
+                {/* Comments Section (unchanged) */}
                 <div className="border-t border-gray-200 pt-8">
-                  <h3 className="text-xl font-bold mb-6">Comments ({blog.comments.length})</h3>
+                  <h3 className="text-xl font-bold mb-6">Comments ({(blog.comments || []).length})</h3>
 
-                  {/* Comment Form */}
                   {token ? (
                     <form onSubmit={handleComment} className="mb-8">
                       <textarea
@@ -406,12 +396,11 @@ const BlogDetail = () => {
                     </div>
                   )}
 
-                  {/* Comments List */}
                   <div className="space-y-6">
-                    {blog.comments.length === 0 ? (
+                    {(blog.comments || []).length === 0 ? (
                       <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
                     ) : (
-                      blog.comments.map((comment, index) => (
+                      (blog.comments || []).map((comment, index) => (
                         <div key={index} className="flex space-x-4">
                           <img
                             src={comment.user.image}
@@ -438,10 +427,9 @@ const BlogDetail = () => {
             </article>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar (unchanged) */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
-              {/* Related Blogs */}
               {relatedBlogs.length > 0 && (
                 <div className="bg-white rounded-lg shadow-lg p-6">
                   <h3 className="text-xl font-bold mb-4">Related Articles</h3>
@@ -478,7 +466,6 @@ const BlogDetail = () => {
                 </div>
               )}
 
-              {/* Newsletter Signup */}
               <div className="bg-primary text-white rounded-lg p-6">
                 <h3 className="text-xl font-bold mb-2">Stay Updated</h3>
                 <p className="text-primary-100 mb-4">Subscribe to get the latest health tips and medical insights.</p>

@@ -15,11 +15,13 @@ import "react-toastify/dist/ReactToastify.css";
 import AIChat from './components/AIChat'
 import Blogs from './pages/Blogs'
 import BlogDetail from './pages/BlogDetail'
+import ScrollToTop from './components/ScrollToTop'
 // import DoctorAchievements from './pages/Achievements'
 
 const App = () => {
   return (
     <div className="mx-4 sm:mx-[2%]">
+       <ScrollToTop />
       <ToastContainer />
         <Navbar />
       <Routes>
