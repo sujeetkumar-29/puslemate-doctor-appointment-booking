@@ -20,6 +20,9 @@ import DoctorBlogs from './pages/Doctor/DoctorBlogs'
 import CreateBlog from './pages/Doctor/CreateBlog'
 import EditBlog from './pages/Doctor/EditBlog'
 
+import AdminBlogs from './pages/Admin/AdminBlogs';
+import BlogAnalytics from './pages/Admin/BlogAnalytics';
+
 const App = () => {
   const { aToken } = useContext(AdminContext);
   const { dToken } = useContext(DoctorContext)
@@ -37,6 +40,10 @@ const App = () => {
           <Route path="/all-appointments" element={<AllAppointments />} />
           <Route path="/add-doctor" element={<AddDoctor />} />
           <Route path="/doctor-list" element={<DoctorsList />} />
+
+           {/* Blog Management Routes */}
+          <Route path="/admin-blogs" element={<AdminBlogs />} />
+          <Route path="/blog-analytics" element={<BlogAnalytics />} />
 
           {/* Doctor Route  */}
 

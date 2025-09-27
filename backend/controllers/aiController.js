@@ -67,7 +67,7 @@ export const chatWithAI = async (req, res) => {
 
     let aiText;
     try {
-      aiText = await generateWithRetry("gemini-1.5-flash", fullPrompt);
+      aiText = await generateWithRetry("gemini-2.5-flash", fullPrompt);
     } catch (flashErr) {
       if (flashErr.status === 503) {
         console.warn("Switching to gemini-1.5-pro due to overload...");
@@ -131,7 +131,7 @@ export const getChatHistory = async (req, res) => {
 
 export const healthCheck = async (req, res) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     await model.generateContent("Hello");
     res.json({
       success: true,
