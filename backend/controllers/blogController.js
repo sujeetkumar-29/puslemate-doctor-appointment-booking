@@ -56,65 +56,111 @@ const createBlog = async (req, res) => {
 };
 
 // Generate blog content using Gemini AI
+// Improved generateBlogContent function for better formatting
+// Updated generateBlogContent function in blogController.js
 const generateBlogContent = async (req, res) => {
-    try {
-        const { topic, category, targetLength } = req.body;
+  try {
+    const { topic, category, targetLength } = req.body;
 
-        if (!topic) {
-            return res.json({ success: false, message: "Topic is required" });
-        }
+    if (!topic) {
+      return res.json({ success: false, message: "Topic is required" });
+    }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        const prompt = `
+    const prompt = `
       Write a comprehensive, professional medical blog post about "${topic}" in the category "${category}".
-      
+
       Requirements:
-      - Target length: ${targetLength || '800-1000'} words
+      - Target length: ${targetLength || "800-1000"} words
       - Write in a professional yet accessible tone
       - Include accurate medical information (add disclaimer about consulting healthcare professionals)
       - Structure with clear headings and subheadings
       - Include practical tips or advice where appropriate
       - Make it engaging for general readers
       - Ensure content is factual and evidence-based
-      
-      Please provide the response in the following JSON format:
-      {
-        "title": "Engaging blog title",
-        "excerpt": "Brief summary (150-200 characters)",
-        "content": "Full blog content with proper formatting",
-        "suggestedTags": ["tag1", "tag2", "tag3"],
-        "seoTitle": "SEO optimized title",
-        "seoDescription": "SEO meta description"
-      }
+
+      IMPORTANT FORMATTING RULES:
+      - Use <h1>Title</h1> for the main title
+      - Use <h2>Section Title</h2> for main sections
+      - Use <h3>Subsection</h3> for subsections
+      - Use regular paragraphs without any special formatting
+      - Separate paragraphs with double line breaks
+      - Use **bold text** for important points
+      - Use *italic text* for medical terms
+      - For lists, use numbered format: 1. Item one 2. Item two
+      - End with a medical disclaimer section
+
+      Structure the blog with these sections:
+      1. Introduction paragraph
+      2. What is [Topic]? section
+      3. Key symptoms or aspects
+      4. Treatment options
+      5. Prevention tips (if applicable)
+      6. When to see a doctor
+      7. Conclusion
+      8. Medical disclaimer
+
+     
+     
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    let text = response.text();
 
-        // Try to parse as JSON, fallback to plain text if needed
-        let blogContent;
-        try {
-            blogContent = JSON.parse(text);
-        } catch (parseError) {
-            // If JSON parsing fails, create structured response from plain text
-            blogContent = {
-                title: `${topic} - A Comprehensive Guide`,
-                excerpt: `Learn about ${topic} and how it affects your health.`,
-                content: text,
-                suggestedTags: [topic.toLowerCase(), category.toLowerCase()],
-                seoTitle: `${topic} - Expert Medical Insights`,
-                seoDescription: `Comprehensive guide about ${topic} from medical professionals.`
-            };
-        }
+    // Remove markdown fences if present
+    text = text.replace(/```json|```/g, "").trim();
 
-        res.json({ success: true, blogContent });
-    } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: "Failed to generate blog content" });
+    let blogContent;
+    try {
+      blogContent = JSON.parse(text);
+      
+      // Clean up the content - remove any unwanted characters
+      if (blogContent.content) {
+        blogContent.content = blogContent.content
+          .replace(/\\n/g, '\n') // Convert \n to actual line breaks
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+          .trim();
+      }
+      
+    } catch (parseError) {
+      console.error("JSON parse failed, creating formatted fallback:", parseError);
+
+      // Create a well-formatted fallback
+      const formattedContent = `<h1>About ${topic}</h1>
+
+${text.replace(/\n\s*\n/g, '\n\n')}
+
+<h2>Medical Disclaimer</h2>
+
+**Important:** This article is for informational purposes only and should not replace professional medical advice. Always consult with a qualified healthcare provider before making any medical decisions or if you have concerns about your health.`;
+
+      blogContent = {
+        title: `${topic} - A Comprehensive Medical Guide`,
+        excerpt: `Learn about ${topic}, its symptoms, treatment options, and when to seek medical care from healthcare professionals.`,
+        content: formattedContent,
+        suggestedTags: [
+          topic.toLowerCase().replace(/\s+/g, '-'), 
+          category?.toLowerCase().replace(/\s+/g, '-') || "health",
+          "medical-guide",
+          "healthcare"
+        ],
+        seoTitle: `${topic} - Expert Medical Insights and Treatment Guide`,
+        seoDescription: `Comprehensive guide about ${topic} covering symptoms, treatment options, prevention tips, and when to consult healthcare professionals.`,
+      };
     }
+
+    // Ensure aiGenerated flag is set
+    blogContent.aiGenerated = true;
+
+    res.json({ success: true, blogContent });
+  } catch (error) {
+    console.error(error);
+    res.json({ success: false, message: "Failed to generate blog content" });
+  }
 };
+
 
 // Get all published blogs with pagination
 const getAllBlogs = async (req, res) => {

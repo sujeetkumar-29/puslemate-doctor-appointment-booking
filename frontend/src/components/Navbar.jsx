@@ -13,6 +13,7 @@ import {
   Menu, 
   X, 
   ChevronDown,
+  Rss,
   
 } from 'lucide-react'
 
@@ -33,7 +34,7 @@ const Navbar = () => {
     { path: '/doctors', label: 'DOCTORS', icon: Stethoscope },
     { path: '/about', label: 'ABOUT', icon: Info },
     { path: '/contact', label: 'CONTACT', icon: Mail },
-    { path: '/blogs', label: 'BLOG', icon: Home }
+    { path: '/blogs', label: 'BLOG', icon: Rss }
   ];
 
   return (

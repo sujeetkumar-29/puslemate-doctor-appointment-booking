@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
-import  BlogCard  from '../components/BlogCard';
+import BlogCard from '../components/BlogCard';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import BlogContentParser from '../components/BlogContentParser';
+// import { Markdown } from 'react-markdown';
 
 const BlogDetail = () => {
   const { slug } = useParams();
@@ -19,16 +23,16 @@ const BlogDetail = () => {
     try {
       setLoading(true);
       const { data } = await axios.get(`${backendUrl}/api/blog/${slug}`);
-      
+
       if (data.success) {
         setBlog(data.blog);
-        
+
         // Check if user has liked this blog
         if (token && userData && data.blog.likes) {
           const userLike = data.blog.likes.find(like => like.user === userData._id);
           setIsLiked(!!userLike);
         }
-        
+
         // Fetch related blogs
         fetchRelatedBlogs(data.blog.category, data.blog._id);
       } else {
@@ -47,7 +51,7 @@ const BlogDetail = () => {
       const { data } = await axios.get(`${backendUrl}/api/blog/all`, {
         params: { category, limit: 3 }
       });
-      
+
       if (data.success) {
         // Filter out current blog
         const related = data.blogs.filter(b => b._id !== currentBlogId);
@@ -75,7 +79,7 @@ const BlogDetail = () => {
         setIsLiked(!isLiked);
         setBlog(prev => ({
           ...prev,
-          likes: isLiked 
+          likes: isLiked
             ? prev.likes.filter(like => like.user !== userData._id)
             : [...prev.likes, { user: userData._id }]
         }));
@@ -89,7 +93,7 @@ const BlogDetail = () => {
 
   const handleComment = async (e) => {
     e.preventDefault();
-    
+
     if (!token) {
       toast.error('Please login to comment');
       return;
@@ -164,6 +168,7 @@ const BlogDetail = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Breadcrumb */}
@@ -211,7 +216,7 @@ const BlogDetail = () => {
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
                     {blog.title}
                   </h1>
-                  
+
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
                     <span>Published {formatDate(blog.publishedAt || blog.createdAt)}</span>
                     <span>•</span>
@@ -240,9 +245,64 @@ const BlogDetail = () => {
                 </div>
 
                 {/* Blog Content */}
-                <div className="prose prose-lg max-w-none mb-8">
-                  {formatContent(blog.content)}
+                <div className="mb-8">
+                  <div className="prose prose-lg max-w-none">
+                    {blog.content && blog.content.split('\n').map((line, index) => {
+                      const trimmedLine = line.trim();
+
+                      if (!trimmedLine) return null;
+
+                      // H2 tags
+                      if (trimmedLine.match(/<h2>.*?<\/h2>/)) {
+                        const text = trimmedLine.replace(/<\/?h2>/g, '');
+                        return (
+                          <h2 key={index} className="text-2xl font-semibold text-gray-900 mb-4 mt-7">
+                            {text}
+                          </h2>
+                        );
+                      }
+
+                      // H3 tags
+                      if (trimmedLine.match(/<h3>.*?<\/h3>/)) {
+                        const text = trimmedLine.replace(/<\/?h3>/g, '');
+                        return (
+                          <h3 key={index} className="text-xl font-semibold text-gray-900 mb-3 mt-6">
+                            {text}
+                          </h3>
+                        );
+                      }
+
+                      // Bullet points with bold text
+                      if (trimmedLine.match(/^\s*\*\s+\*\*.*?\*\*/)) {
+                        const text = trimmedLine
+                          .replace(/^\s*\*\s*/, '')
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+                        return (
+                          <div key={index} className="mb-4">
+                            <p className="text-gray-700 leading-relaxed flex">
+                              <span className="mr-3 text-gray-500">•</span>
+                              <span dangerouslySetInnerHTML={{ __html: text }} />
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      // Regular paragraphs
+                      const text = trimmedLine
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+                      return (
+                        <p key={index} className="text-gray-700 mb-4 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: text }}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
+
+
 
                 {/* Tags */}
                 {blog.tags && blog.tags.length > 0 && (
@@ -266,11 +326,10 @@ const BlogDetail = () => {
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={handleLike}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                        isLiked
-                          ? 'bg-red-50 text-red-600 border border-red-200'
-                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                      }`}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${isLiked
+                        ? 'bg-red-50 text-red-600 border border-red-200'
+                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                        }`}
                     >
                       <svg
                         className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`}
@@ -287,7 +346,7 @@ const BlogDetail = () => {
                       </svg>
                       <span>{blog.likes.length}</span>
                     </button>
-                    
+
                     <div className="flex items-center space-x-2 text-gray-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -300,12 +359,12 @@ const BlogDetail = () => {
                     <span className="text-sm text-gray-500">Share:</span>
                     <button className="p-2 text-gray-400 hover:text-blue-600">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                        <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
                       </svg>
                     </button>
                     <button className="p-2 text-gray-400 hover:text-blue-800">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
+                        <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" />
                       </svg>
                     </button>
                   </div>
@@ -314,7 +373,7 @@ const BlogDetail = () => {
                 {/* Comments Section */}
                 <div className="border-t border-gray-200 pt-8">
                   <h3 className="text-xl font-bold mb-6">Comments ({blog.comments.length})</h3>
-                  
+
                   {/* Comment Form */}
                   {token ? (
                     <form onSubmit={handleComment} className="mb-8">
