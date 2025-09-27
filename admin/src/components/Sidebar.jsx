@@ -31,7 +31,7 @@ const Sidebar = () => {
             <SidebarLink to="/all-appointments" icon={assets.appointment_icon} label="Appointments" />
             <SidebarLink to="/add-doctor" icon={assets.add_icon} label="Add Doctor" />
             <SidebarLink to="/doctor-list" icon={assets.people_icon} label="Doctor List" />
-            <SidebarLink to="/admin-blogs" icon={assets.people_icon} label="All Blogs" />
+            <SidebarLink to="/admin-blogs" icon={assets.home_icon} label="All Blogs" />
             <SidebarLink to="/blog-analytics" icon={assets.people_icon} label="Blog Analytics" />
           </>
         )}

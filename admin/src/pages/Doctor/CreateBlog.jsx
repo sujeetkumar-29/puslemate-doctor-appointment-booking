@@ -257,7 +257,7 @@ const CreateBlog = () => {
                     <option value="published">Published</option>
                   </select>
                 </div>
-                <div className="flex items-center pt-8">
+                {/* <div className="flex items-center pt-8">
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -268,7 +268,7 @@ const CreateBlog = () => {
                     />
                     <span className="text-sm text-gray-700">Featured Blog</span>
                   </label>
-                </div>
+                </div> */}
               </div>
 
               {/* Image Upload */}
