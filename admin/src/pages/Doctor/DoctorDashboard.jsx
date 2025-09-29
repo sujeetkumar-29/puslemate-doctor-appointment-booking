@@ -98,7 +98,7 @@ const DoctorDashboard = () => {
 
   if (!dashData) {
     return (
-      <div className="w-full max-w-6xl mx-auto p-6">
+      <div className="w-full max-w-6xl mx-auto p-6 overflow-y-scroll h-[100vh]">
         <div className="animate-pulse">
           <div className="mb-8">
             <div className="bg-gray-200 h-8 w-64 rounded mb-2"></div>
@@ -122,7 +122,7 @@ const DoctorDashboard = () => {
   const completionRate = totalAppointments > 0 ? Math.round((completedAppointments / totalAppointments) * 100) : 0;
 
   return (
-    <div className='w-full max-w-6xl mx-auto p-6 space-y-8'>
+    <div className='w-full max-w-6xl mx-auto p-6 space-y-8 overflow-y-scroll h-[100vh]'>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Doctor Dashboard</h1>

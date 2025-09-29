@@ -25,7 +25,7 @@ import BlogAnalytics from './pages/Admin/BlogAnalytics';
 
 const App = () => {
   const { aToken } = useContext(AdminContext);
-  const { dToken } = useContext(DoctorContext)
+  const { dToken } = useContext(DoctorContext);
   return aToken || dToken ? (
     <div className='bg-[#f0f2f5]'>
 

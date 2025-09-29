@@ -44,7 +44,7 @@ const DoctorsList = () => {
   }
 
   return (
-    <div className='w-full max-w-7xl mx-auto p-6'>
+    <div className='w-full max-w-7xl mx-auto p-6 overflow-y-scroll h-[100vh]'>
       {/* Header Section */}
       <div className="mb-8">
         <h1 className='text-3xl font-bold text-gray-800 mb-2'>All Doctors</h1>

@@ -97,7 +97,7 @@ const DoctorBlogs = () => {
   }
 
   return (
-    <div className="m-5 max-h-[90vh] overflow-y-scroll">
+    <div className="m-5 max-h-[90vh] overflow-y-scroll w-full max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-700">My Blogs</h1>
         <div className="flex gap-4">

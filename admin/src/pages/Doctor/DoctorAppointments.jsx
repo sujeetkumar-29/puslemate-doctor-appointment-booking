@@ -21,7 +21,7 @@ const DoctorAppointments = () => {
 
   if (!appointments) {
     return (
-      <div className='w-full max-w-7xl mx-auto p-6'>
+      <div className='m-5 max-h-[90vh] overflow-y-scroll w-full max-w-7xl mx-auto p-6'>
         <div className="animate-pulse">
           <div className="bg-gray-200 h-8 w-64 rounded mb-6"></div>
           <div className="bg-gray-200 h-96 rounded-xl"></div>
@@ -68,7 +68,7 @@ const DoctorAppointments = () => {
   }
 
   return (
-    <div className='w-full max-w-7xl mx-auto p-6'>
+    <div className='w-full max-w-7xl mx-auto p-6 overflow-y-scroll h-[100vh]'>
       {/* Header Section */}
       <div className="mb-8">
         <h1 className='text-3xl font-bold text-gray-800 mb-2'>My Appointments</h1>

@@ -46,7 +46,7 @@ const DoctorProfile = () => {
 
   if (!profileData) {
     return (
-      <div className="w-full max-w-6xl mx-auto p-6">
+      <div className="m-5 max-h-[90vh] overflow-y-scroll w-full max-w-7xl mx-auto p-6">
         <div className="animate-pulse">
           <div className="bg-gray-200 h-8 w-64 rounded mb-6"></div>
           <div className="flex flex-col lg:flex-row gap-8">
@@ -63,7 +63,7 @@ const DoctorProfile = () => {
   }
 
   return (
-    <div className='w-full max-w-6xl mx-auto p-6 space-y-8'>
+    <div className='w-full max-w-6xl mx-auto p-6 space-y-8 overflow-y-scroll h-[100vh]'>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Doctor Profile</h1>

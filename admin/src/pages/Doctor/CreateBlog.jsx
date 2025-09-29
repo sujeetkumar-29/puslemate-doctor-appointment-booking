@@ -146,7 +146,7 @@ const CreateBlog = () => {
   };
 
   return (
-    <div className="m-5 max-h-[90vh] overflow-y-scroll">
+    <div className="m-5 max-h-[90vh] overflow-y-scroll w-full max-w-7xl mx-auto p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-700">Create New Blog</h1>

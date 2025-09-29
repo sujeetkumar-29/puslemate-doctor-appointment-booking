@@ -56,7 +56,7 @@ const AllAppointments = () => {
         </div>
 
         {/* Table Body */}
-        <div className="max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[70vh] overflow-y-auto pr-2">
           {appointments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">

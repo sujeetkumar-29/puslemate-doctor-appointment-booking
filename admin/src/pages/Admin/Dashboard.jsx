@@ -24,7 +24,7 @@ const AppointmentItem = ({ item, slotDateFormat, cancelAppointment }) => {
   const { docData, cancelled, isCompleted, _id, slotDate } = item;
   
   return (
-    <div className="group flex items-center px-6 py-4 gap-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 border-b border-gray-50 last:border-b-0">
+    <div className="group flex items-center px-6 py-4 gap-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-200 border-b border-gray-50 last:border-b-0 overflow-y-scroll">
       <div className="relative">
         <img 
           className="rounded-full w-12 h-12 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-200" 

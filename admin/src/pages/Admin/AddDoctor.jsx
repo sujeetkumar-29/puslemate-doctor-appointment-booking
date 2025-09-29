@@ -71,7 +71,7 @@ const AddDoctor = () => {
     };
 
     return (
-        <div className="w-full max-w-6xl mx-auto p-6">
+        <div className="w-full max-w-6xl mx-auto p-6 overflow-y-scroll h-[90vh]">
             {/* Header Section */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">Add New Doctor</h1>
