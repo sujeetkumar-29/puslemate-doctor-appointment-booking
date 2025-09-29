@@ -26,6 +26,8 @@ app.use(cors({
         'http://localhost:4000',
         'http://localhost:5173',
         'http://localhost:5174',
+        "https://puslemate-doctor-appointment-bookin.vercel.app",
+        "https://puslemate-doctor-appointment-booking-s2xg-jb6bg6rrn.vercel.app",
         process.env.FRONTEND_URL,
         process.env.ADMIN_URL
     ],
