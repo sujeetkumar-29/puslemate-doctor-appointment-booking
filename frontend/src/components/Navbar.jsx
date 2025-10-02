@@ -66,6 +66,16 @@ const Navbar = () => {
           </NavLink>
         ))}
       </ul>
+      <div>
+  <a 
+    href="https://puslemate-doctor-appointment-bookin-five.vercel.app/" 
+    target="_blank" 
+    rel="noreferrer"
+    className="bg-primary text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-opacity-90 transition-all duration-200"
+  >
+    Admin
+  </a>
+</div>
 
       {/* Profile / Login / Mobile Menu Toggle */}
       <div className="flex items-center gap-3">
